@@ -1,7 +1,7 @@
 {
   "name": "@codeinc.mx/grid-system",
   "version": "0.1.0",
-  "description": "A simple grid web design system based on css grid layout",
+  "description": "A great grid web design system based on css grid layout",
   "main": "scss/grid.scss",
   "directories": {
     "examples": "examples"
