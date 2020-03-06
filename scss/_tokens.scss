@@ -1,0 +1,12 @@
+// Determines the space between columns
+$grid__columnGap: 10px;
+
+// Specify the number of columns to show depends on size device
+$grid__columns: (
+  starts-in: 4,
+  xs: 4,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 12
+) !default;

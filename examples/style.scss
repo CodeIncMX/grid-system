@@ -1,0 +1,9 @@
+@import '../scss/grid.scss';
+
+@include grid();
+
+div[class^=col] {
+  border: 2px solid red;
+  text-align: center;
+  margin-bottom: 5px;
+}
