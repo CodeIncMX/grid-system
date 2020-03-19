@@ -1,13 +1,12 @@
 @import './tokens';
 @import '@codeinc.mx/responsive-system/scss/responsive';
 
-@mixin grid(){
-  .grid {
-    display: grid;
-    grid-column-gap: $grid__columnGap;
-    @include stablish-number-of-columns;
-    @include create-columns-classes;
-  }
+/* MIXINS FOR SASS CODE USE */
+
+@mixin add-grid() {
+  display: grid;
+  grid-column-gap: $grid__columnGap;
+  @include stablish-number-of-columns;
 }
 
 @mixin stablish-number-of-columns {
@@ -18,96 +17,171 @@
   }
 }
 
-@mixin create-columns-classes {
-  $is__sizeDevice--theSmallest: true;
-  @each $device__size, $totalOf__columns in $grid__columns {
-    @for $column-number from 1 to $totalOf__columns {
-      @include create-column-class($column-number, $device__size, $is__sizeDevice--theSmallest);
-    }
-    @include create-half-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest);
-    @include create-full-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest);
-    $is__sizeDevice--theSmallest: false;
-  }
-  @include create-all-half-column-class;
-  @include create-all-full-column-class;
-}
-
-@mixin create-column-class($column__number, $device__size, $is__sizeDevice--theSmallest) {
-  $class__name: if($is__sizeDevice--theSmallest, 'col', 'col-#{$device__size}' );
-  @if $column__number > 1 {
-    $class__name: '#{$class__name}-#{$column__number}';
-  }
-  @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
-    grid-column-end: span #{$column__number};
-  }
-}
-
-// Only is created when total of columns set is pair
-@mixin create-half-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest) {
-  @if ($totalOf__columns % 2 ) == 0 {
-    $class__name: if($is__sizeDevice--theSmallest, 'col-half', 'col-#{$device__size}-half' );
-    $middle: $totalOf__columns / 2;
-    @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
-      grid-column: span #{$middle};
-    } 
-  }
-}
-
-
-
-@mixin create-class($class__name, $device__size, $is__sizeDevice--theSmallest) {
-  .#{$class__name} {
-    @if $is__sizeDevice--theSmallest {
-      @content
-    } @else {
-      $breakpoint: map-get($breakpoints, $device__size);
-      @media (min-width: $breakpoint) {
-        @content
-      }
-    }
-  }
-}
-
-@mixin create-full-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest) {
-  $class__name: if($is__sizeDevice--theSmallest, 'col-full', 'col-#{$device__size}-full' );
-  @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
-    grid-column: 1 / span #{$totalOf__columns};
-  }
-}
-
-@mixin create-all-full-column-class {
-  .col-all-full {
-    $is__sizeDevice--theSmallest: true;
-    @each $device__size, $totalOf__columns in $grid__columns {
-      @if $is__sizeDevice--theSmallest {
-        grid-column: 1 / span $totalOf__columns;
+@mixin col($cols__toUse: 1, $device__size: starts-in) {
+  @include set-in-valid-size-device($device__size) {
+    @if ($cols__toUse == half) {
+      $totalOf__columns: map-get($grid__columns, $device__size);
+      @if (($totalOf__columns % 2 ) == 0 ) {
+        $cols__toUse: $totalOf__columns / 2 ;
       } @else {
-        $breakpoint: map-get($breakpoints, $device__size);
-        @media (min-width: $breakpoint) {
-          grid-column: 1 / span $totalOf__columns;
-        }
+        @error('SIZE DEVICE "#{$device__size}: #{$cols__toUse}" IS NOT PAIR. PLEASE STABLISH MANUALLY');
       }
-      $is__sizeDevice--theSmallest: false;
+    } @else if ( $cols__toUse == full) {
+      $cols__toUse: map-get($grid__columns, $device__size );
+    }
+    grid-column-end: span $cols__toUse;
+  }
+}
+
+/* Stablish the space occupied by the caller in different size devices */
+@mixin col-map($map) {
+
+  @if not map-has-key($map, starts-in ) {
+    @error('COL MAP MUST CONTAINS starts-in VALUE!!!');
+  }
+
+  @each $device__size, $columns__toUse in $map {
+    @include set-in-valid-size-device($device__size) {
+      @include col($columns__toUse, $device__size);
     }
   }
 }
 
-@mixin create-all-half-column-class {
-  .col-all-half {
-    $is__sizeDevice--theSmallest: true;
-    @each $device__size, $totalOf__columns in $grid__columns {
-      @if ($totalOf__columns % 2 ) == 0 {
-        $middle: $totalOf__columns  / 2;
-        @if $is__sizeDevice--theSmallest {
-          grid-column: span #{$middle};
-        } @else {
-          $breakpoint: map-get($breakpoints, $device__size);
-          @media (min-width: $breakpoint) {
-            grid-column: span #{$middle};
-          }
-        }
+/* Use it when the caller is half for all size devices*/
+@mixin col-half {
+  @each $device__size, $totalOf__columns in $grid__columns {
+    @if ($totalOf__columns % 2 ) == 0 {
+      @include set-in-valid-size-device($device__size) {
+        grid-column: span #{$totalOf__columns / 2};
       }
-      $is__sizeDevice--theSmallest: false;
+    } @else {
+      @error('SIZE DEVICE "#{$device__size}: #{$totalOf__columns}" IN $grid__columns TOKEN IS NOT PAIR. PLEASE STABLISH MANUALLY');
     }
   }
 }
+
+/* Use it when the caller full width fot all size devices */
+@mixin col-full {
+  @each $device__size, $totalOf__columns in $grid__columns {
+    @include set-in-valid-size-device($device__size) {
+      grid-column: span $totalOf__columns;
+    }
+  }
+}
+
+/* Helper mixin for set value */
+@mixin set-in-valid-size-device($device__size) {
+  @if ($device__size == starts-in ) {
+    @content;
+  } @else {
+    @include set-mediaquery($device__size) {
+      @content;
+    }
+  }
+}
+
+/* DEFAULT CLASSES OFR HTML USE */
+// @mixin grid(){
+//   .grid {
+//     display: grid;
+//     grid-column-gap: $grid__columnGap;
+//     @include stablish-number-of-columns;
+//     @include create-columns-classes;
+//   }
+// }
+
+
+
+// @mixin create-columns-classes {
+//   $is__sizeDevice--theSmallest: true;
+//   @each $device__size, $totalOf__columns in $grid__columns {
+//     @for $column-number from 1 to $totalOf__columns {
+//       @include create-column-class($column-number, $device__size, $is__sizeDevice--theSmallest);
+//     }
+//     @include create-half-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest);
+//     @include create-full-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest);
+//     $is__sizeDevice--theSmallest: false;
+//   }
+//   @include create-all-half-column-class;
+//   @include create-all-full-column-class;
+// }
+
+// @mixin create-column-class($column__number, $device__size, $is__sizeDevice--theSmallest) {
+//   $class__name: if($is__sizeDevice--theSmallest, 'col', 'col-#{$device__size}' );
+//   @if $column__number > 1 {
+//     $class__name: '#{$class__name}-#{$column__number}';
+//   }
+//   @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
+//     grid-column-end: span #{$column__number};
+//   }
+// }
+
+// // Only is created when total of columns set is pair
+// @mixin create-half-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest) {
+//   @if ($totalOf__columns % 2 ) == 0 {
+//     $class__name: if($is__sizeDevice--theSmallest, 'col-half', 'col-#{$device__size}-half' );
+//     $middle: $totalOf__columns / 2;
+//     @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
+//       grid-column: span #{$middle};
+//     }
+//   }
+// }
+
+
+
+// @mixin create-class($class__name, $device__size, $is__sizeDevice--theSmallest) {
+//   .#{$class__name} {
+//     @if $is__sizeDevice--theSmallest {
+//       @content
+//     } @else {
+//       $breakpoint: map-get($breakpoints, $device__size);
+//       @media (min-width: $breakpoint) {
+//         @content
+//       }
+//     }
+//   }
+// }
+
+// @mixin create-full-column-class($totalOf__columns, $device__size, $is__sizeDevice--theSmallest) {
+//   $class__name: if($is__sizeDevice--theSmallest, 'col-full', 'col-#{$device__size}-full' );
+//   @include create-class($class__name, $device__size, $is__sizeDevice--theSmallest)  {
+//     grid-column: 1 / span #{$totalOf__columns};
+//   }
+// }
+
+// @mixin create-all-full-column-class {
+//   .col-all-full {
+//     $is__sizeDevice--theSmallest: true;
+//     @each $device__size, $totalOf__columns in $grid__columns {
+//       @if $is__sizeDevice--theSmallest {
+//         grid-column: 1 / span $totalOf__columns;
+//       } @else {
+//         $breakpoint: map-get($breakpoints, $device__size);
+//         @media (min-width: $breakpoint) {
+//           grid-column: 1 / span $totalOf__columns;
+//         }
+//       }
+//       $is__sizeDevice--theSmallest: false;
+//     }
+//   }
+// }
+
+// @mixin create-all-half-column-class {
+//   .col-all-half {
+//     $is__sizeDevice--theSmallest: true;
+//     @each $device__size, $totalOf__columns in $grid__columns {
+//       @if ($totalOf__columns % 2 ) == 0 {
+//         $middle: $totalOf__columns  / 2;
+//         @if $is__sizeDevice--theSmallest {
+//           grid-column: span #{$middle};
+//         } @else {
+//           $breakpoint: map-get($breakpoints, $device__size);
+//           @media (min-width: $breakpoint) {
+//             grid-column: span #{$middle};
+//           }
+//         }
+//       }
+//       $is__sizeDevice--theSmallest: false;
+//     }
+//   }
+// }

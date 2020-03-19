@@ -1,9 +1,33 @@
 @import '../scss/grid.scss';
 
-@include grid();
+// @include grid();
 
-div[class^=col] {
-  border: 2px solid red;
-  text-align: center;
-  margin-bottom: 5px;
+// div[class^=col] {
+//   border: 2px solid red;
+//   text-align: center;
+//   margin-bottom: 5px;
+// }
+
+
+$col__map: (
+  starts-in: 1,
+  xs: 2,
+  sm: full,
+  md: half,
+  lg: 3,
+  xl: 5
+);
+
+.sec {
+  @include add-grid();
+
+  &>div {
+    text-align: center;
+    border: 2px solid red;
+
+    // @include col-half;
+    @include col-map((starts-in: half));
+    // @include col-map($col__map);
+  }
+
 }
